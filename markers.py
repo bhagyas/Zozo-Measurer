@@ -73,7 +73,7 @@ def find_marker_ellipses(im):
     im_gray = cvtColor(im, COLOR_BGR2GRAY)
     im_blur = GaussianBlur(im_gray, (3, 3), 0)
     ret, th = threshold(im_blur, 0, 255, THRESH_BINARY_INV + THRESH_OTSU)
-    imgEdge, contours, hierarchy = findContours(th, RETR_TREE, CHAIN_APPROX_NONE)
+    contours, hierarchy = findContours(th, RETR_TREE, CHAIN_APPROX_NONE)
     points = []
     origins = []
     ellipses = []
@@ -193,7 +193,7 @@ def generate_mask(shape, r, alpha, bit_mask=4095, draw_center=False):
 def find_max_id_in_pattern(pattern):
     low = pattern & 63
     high = (pattern & (63 << 6)) >> 6
-    id_candidates = np.zeros(6, dtype=np.int)
+    id_candidates = np.zeros(6, dtype=np.int64)
     id_candidates[0] = pattern
     for i in range(1, 6):
         l = (low << i) % (1 << 6) + ((low << i) >> 6)
