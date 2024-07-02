@@ -66,7 +66,7 @@ if __name__ == '__main__':
     p_coll_img = collect_points((64, 64), raw_data)
     if min(p_coll_img.shape[0:1]) > 0:
         # cv2.imshow('Collected Points', p_coll_img)
-        cv2.imwrite("collected_points.png", p_coll_img)
+        cv2.imwrite("./output/collected_points.png", p_coll_img)
 
     im_draw = im.copy()
     for i in range(len(point_ids)):
