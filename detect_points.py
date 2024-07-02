@@ -98,8 +98,12 @@ if __name__ == '__main__':
                         color=(255, 0, 255),
                         thickness=2,
                         lineType=cv2.LINE_AA)
-    cv2.imwrite("point_positions.png", im_draw)
+    cv2.imwrite("./output/point_positions.png", im_draw)
     im_preview, scale_factor = scale_preview(im_draw)
-    cv2.imshow('Point positions', im_preview)
-    key = cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # write the preview image to the disk
+    cv2.imwrite("./output/point_positions_preview.png", im_preview)
+
+    # we are using the following code to display the preview image only when running the script in the interactive mode
+    # cv2.imshow('Point positions', im_preview)
+    # key = cv2.waitKey(0)
+    # cv2.destroyAllWindows()
