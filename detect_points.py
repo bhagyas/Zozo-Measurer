@@ -5,6 +5,7 @@ from markers import find_marker_ellipses, unskew_point, get_point_id, collect_po
 from markers import find_best_10_confidences
 import cv2
 import sys
+import numpy as np
 
 
 def scale_preview(preview_img, max_preview_size=(1800, 960)):
@@ -13,6 +14,89 @@ def scale_preview(preview_img, max_preview_size=(1800, 960)):
                            interpolation=cv2.INTER_CUBIC)
     return scaled_im, scale_fac
 
+def generate_obj_file(point_ids, positions, distances, output_path):
+    """
+    Generate a .obj file from the detected points.
+
+    :param point_ids: List of point IDs
+    :param positions: List of 2D positions (x, y)
+    :param distances: List of distances from the camera
+    :param output_path: Path to save the .obj file
+    """
+    with open(output_path, 'w') as f:
+        # Write vertices
+        for i, (pos, dist) in enumerate(zip(positions, distances)):
+            x, y = pos
+            z = dist / 100  # Convert distance to appropriate scale
+            f.write(f"v {x} {y} {z}\n")
+
+        # Write faces (triangles)
+        # This is a simple triangulation and may not be optimal for all point configurations
+        for i in range(len(point_ids) - 2):
+            for j in range(i + 1, len(point_ids) - 1):
+                for k in range(j + 1, len(point_ids)):
+                    # Add 1 to vertex indices because OBJ files are 1-indexed
+                    f.write(f"f {i+1} {j+1} {k+1}\n")
+
+def generate_point_cloud_obj(point_ids, positions, distances, confidences, output_path, sphere_radius=8.5, sphere_resolution=8, confidence_threshold=0.3):
+    """
+    Generate a point cloud .obj file with small red spheres for each point with confidence > 0.3.
+
+    :param point_ids: List of point IDs
+    :param positions: List of 2D positions (x, y)
+    :param distances: List of distances from the camera
+    :param confidences: List of confidence values for each point
+    :param output_path: Path to save the .obj file
+    :param sphere_radius: Radius of each sphere representing a point
+    :param sphere_resolution: Resolution of each sphere (number of segments)
+    :param confidence_threshold: Minimum confidence value for a point to be included
+    """
+    def generate_sphere(center, radius, resolution):
+        vertices = []
+        faces = []
+        for i in range(resolution):
+            for j in range(resolution):
+                theta = np.pi * i / (resolution - 1)
+                phi = 2 * np.pi * j / (resolution - 1)
+                x = center[0] + radius * np.sin(theta) * np.cos(phi)
+                y = center[1] + radius * np.sin(theta) * np.sin(phi)
+                z = center[2] + radius * np.cos(theta)
+                vertices.append((x, y, z))
+
+        for i in range(resolution - 1):
+            for j in range(resolution - 1):
+                v1 = i * resolution + j
+                v2 = i * resolution + (j + 1)
+                v3 = (i + 1) * resolution + (j + 1)
+                v4 = (i + 1) * resolution + j
+                faces.append((v1, v2, v3))
+                faces.append((v1, v3, v4))
+
+        return vertices, faces
+
+    with open(output_path, 'w') as f:
+        f.write("mtllib sphere.mtl\n")
+        f.write("usemtl red_sphere\n")
+
+        vertex_offset = 1
+        for point_id, pos, dist, conf in zip(point_ids, positions, distances, confidences):
+            if conf > confidence_threshold:
+                x, y = pos
+                z = dist * 5  # Convert distance to appropriate scale
+                sphere_vertices, sphere_faces = generate_sphere((x, y, z), sphere_radius, sphere_resolution)
+
+                for vertex in sphere_vertices:
+                    f.write(f"v {vertex[0]} {vertex[1]} {vertex[2]}\n")
+
+                for face in sphere_faces:
+                    f.write(f"f {face[0] + vertex_offset} {face[1] + vertex_offset} {face[2] + vertex_offset}\n")
+
+                vertex_offset += len(sphere_vertices)
+
+    # Create a simple MTL file for the red material
+    with open(output_path.replace('.obj', '.mtl'), 'w') as f:
+        f.write("newmtl red_sphere\n")
+        f.write("Kd 1.0 0.0 0.0\n")  # Red diffuse color
 
 def detect_points(img):
     skewed_points, origins, ellipses = find_marker_ellipses(img)
@@ -103,7 +187,11 @@ if __name__ == '__main__':
     # write the preview image to the disk
     cv2.imwrite("./output/point_positions_preview.png", im_preview)
 
+    generate_point_cloud_obj(point_ids, positions, distances, confidences, "./output/mesh.obj")
+
+
     # we are using the following code to display the preview image only when running the script in the interactive mode
     # cv2.imshow('Point positions', im_preview)
     # key = cv2.waitKey(0)
     # cv2.destroyAllWindows()
+
