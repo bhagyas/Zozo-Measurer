@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  zozo-measurer:
+    build: .
+    volumes:
+      - ./data:/usr/src/app/data # Assumes you have a data directory for images
+    # Uncomment the line below and modify it to run with a specific image
+    # command: python3 detect_points.py data/your_image.jpg
