@@ -13,7 +13,7 @@ Run `detect_points.py` with a filename as first argument.
 
 Example:
 ```bash
-python3 detect_points.py IMG_20180911_163153_c.jpg
+python3 detect_points.py ./data/IMG_20180911_163153_c.jpg
 ```
 
 Runnig the script will create two files:
